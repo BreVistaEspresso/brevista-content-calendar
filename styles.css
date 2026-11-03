@@ -23,7 +23,7 @@ h1, h2, h3, h4 { margin: 0; }
 .top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 10px 16px; background: rgba(42, 22, 50, .88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.mark { width: 36px; height: 36px; border-radius: 10px; background: var(--chip) url(icons/icon-192.png) center/cover; flex: none; }
+.mark { width: 36px; height: 36px; border-radius: 10px; background: url(icons/favicon-48.png) center/cover; flex: none; }
 .brand-name { font: 700 24px/1 var(--head); text-transform: uppercase; letter-spacing: .06em; }
 .brand-sub { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--lilac); font-weight: 700; margin-top: 2px; }
 .top-actions { display: flex; align-items: center; gap: 8px; }
