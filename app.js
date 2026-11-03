@@ -34,6 +34,8 @@ function normalize(i) {
   i.priority = i.priority || 'medium';
   i.publishDate = i.publishDate || '';
   i.notes = i.notes || '';
+  i.archived = !!i.archived;
+  i.archivedAt = i.archivedAt || '';
   return i;
 }
 
@@ -65,8 +67,9 @@ const PRI_RANK = { high: 0, medium: 1, low: 2 };
 function visible() {
   const { q, stage, category, priority, sort } = S.ui;
   const needle = q.trim().toLowerCase();
+  const wantArchived = S.ui.view === 'archive';
   let list = Object.values(S.ideas).filter((i) =>
-    (!stage || i.stage === stage) && (!category || i.category === category) && (!priority || i.priority === priority) &&
+    !!i.archived === wantArchived && (!stage || i.stage === stage) && (!category || i.category === category) && (!priority || i.priority === priority) &&
     (!needle || (i.title + ' ' + i.keywords + ' ' + i.notes).toLowerCase().includes(needle)));
   const by = {
     number: (a, b) => a.no - b.no,
@@ -78,7 +81,7 @@ function visible() {
   return list.sort(by[sort] || by.number);
 }
 function nextUp() {
-  return Object.values(S.ideas).filter((i) => i.stage !== 'published').sort((a, b) =>
+  return Object.values(S.ideas).filter((i) => i.stage !== 'published' && !i.archived).sort((a, b) =>
     PRI_RANK[a.priority] - PRI_RANK[b.priority] ||
     (a.publishDate || '9999').localeCompare(b.publishDate || '9999') ||
     stageIdx(b.stage) - stageIdx(a.stage) || a.no - b.no).slice(0, 3);
@@ -97,6 +100,15 @@ function setStage(id, key, label = 'Moved') {
   const prev = i.stage;
   i.stage = key; touch(id);
   toast(`${label} to ${stageOf(key).long}`, () => { i.stage = prev; touch(id); renderAll(); });
+  renderAll();
+}
+function setArchived(id, flag) {
+  const i = S.ideas[id]; if (!i) return;
+  const prev = { archived: !!i.archived, archivedAt: i.archivedAt };
+  i.archived = flag; i.archivedAt = flag ? nowIso() : '';
+  if (S.ui.sel === id) S.ui.sel = null;
+  touch(id);
+  toast(flag ? 'Idea archived' : 'Idea restored to the pipeline', () => { i.archived = prev.archived; i.archivedAt = prev.archivedAt; touch(id); renderAll(); });
   renderAll();
 }
 function createIdea(f) {
@@ -134,19 +146,20 @@ function cardHtml(i, variant = '') {
   const late = i.publishDate && i.publishDate < todayStr() && i.stage !== 'published';
   const next = STAGES[stageIdx(i.stage) + 1];
   const pri = BRAND.priorities.find((p) => p.key === i.priority);
-  return `<article class="card p-${i.priority} ${variant} ${S.ui.sel === i.id ? 'sel' : ''}" data-action="open" data-id="${i.id}" tabindex="0">
+  return `<article class="card p-${i.priority} ${i.archived ? 'arch' : ''} ${variant} ${S.ui.sel === i.id ? 'sel' : ''}" data-action="open" data-id="${i.id}" tabindex="0">
     <div class="card-top"><span class="num">#${pad(i.no)}</span><span class="pri pri-${i.priority}">${esc(pri?.label || '')}</span></div>
     <h3 class="card-title">${esc(i.title)}</h3>
-    <div class="meta">${i.category ? `<span class="tag">${esc(i.category)}</span>` : ''}${i.publishDate ? `<span class="tag ${late ? 'overdue' : ''}">${late ? 'Overdue · ' : ''}${esc(fmtDate(i.publishDate))}</span>` : ''}</div>
+    <div class="meta">${i.archived ? `<span class="tag">Archived${i.archivedAt ? ' · ' + esc(fmtDate(i.archivedAt.slice(0, 10))) : ''}</span>` : ''}${i.category ? `<span class="tag">${esc(i.category)}</span>` : ''}${i.publishDate ? `<span class="tag ${late ? 'overdue' : ''}">${late ? 'Overdue · ' : ''}${esc(fmtDate(i.publishDate))}</span>` : ''}</div>
     <div class="bar" title="Pipeline progress"><i style="width:${Math.round(progress(i) * 100)}%"></i></div>
     <div class="card-foot">
       <span class="stage-pill"><i class="dot s-${st.key}"></i>${esc(st.label)}</span>
-      ${next ? `<button class="btn sm" data-action="next" data-id="${i.id}">${esc(next.label)} →</button>` : '<span class="tag">Done</span>'}
+      ${i.archived ? `<button class="btn sm" data-action="restore" data-id="${i.id}">Restore</button>` : next ? `<button class="btn sm" data-action="next" data-id="${i.id}">${esc(next.label)} →</button>` : `<button class="btn sm" data-action="archive" data-id="${i.id}">Archive</button>`}
     </div></article>`;
 }
 
 function renderDash() {
-  const all = Object.values(S.ideas);
+  if (S.ui.view === 'archive') { $('#dash').innerHTML = ''; return; }
+  const all = Object.values(S.ideas).filter((i) => !i.archived);
   const chips = STAGES.map((s) => {
     const n = all.filter((i) => i.stage === s.key).length;
     return `<button class="chip ${S.ui.stage === s.key ? 'on' : ''}" data-action="stagefilter" data-key="${s.key}"><b>${n}</b><span><i class="dot s-${s.key}"></i> ${esc(s.label)}</span></button>`;
@@ -158,9 +171,10 @@ function renderDash() {
     <div class="next"><p class="eyebrow">Next up</p><div class="next-row">${nx || '<span class="empty">Nothing in the pipeline.</span>'}</div></div>`;
 }
 
-const VIEWS = [['carousel', 'Carousel'], ['board', 'Board'], ['list', 'List'], ['calendar', 'Calendar']];
+const VIEWS = [['carousel', 'Carousel'], ['board', 'Board'], ['list', 'List'], ['calendar', 'Calendar'], ['archive', 'Archive']];
 function renderChrome() {
-  $('#views').innerHTML = VIEWS.map(([k, l]) => `<button class="${S.ui.view === k ? 'on' : ''}" data-action="view" data-key="${k}">${l}</button>`).join('');
+  const archivedN = Object.values(S.ideas).filter((i) => i.archived).length;
+  $('#views').innerHTML = VIEWS.map(([k, l]) => `<button class="${S.ui.view === k ? 'on' : ''}" data-action="view" data-key="${k}">${l}${k === 'archive' && archivedN ? ' (' + archivedN + ')' : ''}</button>`).join('');
   const opt = (arr, val, all) => `<option value="">${all}</option>` + arr.map(([v, l]) => `<option value="${esc(v)}" ${val === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
   $('#filters').innerHTML = `
     <input type="search" id="f-q" data-filter="q" placeholder="Search ideas" value="${esc(S.ui.q)}" aria-label="Search ideas">
@@ -181,6 +195,14 @@ function renderView() {
          <button class="nav r" data-action="scroll" data-dir="1" aria-label="Next">›</button></div>
          <p class="count">${list.length} of ${Object.keys(S.ideas).length} ideas</p>`
       : emptyHtml();
+  } else if (v === 'archive') {
+    el.innerHTML = list.length
+      ? `<p class="eyebrow">Archived ideas · hidden from the other views</p>
+         <div class="carousel-wrap"><button class="nav l" data-action="scroll" data-dir="-1" aria-label="Previous">‹</button>
+         <div class="carousel" id="carousel">${list.map((i) => cardHtml(i)).join('')}</div>
+         <button class="nav r" data-action="scroll" data-dir="1" aria-label="Next">›</button></div>
+         <p class="count">${list.length} archived</p>`
+      : `<div class="panel"><h3>Nothing archived</h3><p class="desc">Archive finished or old ideas to keep your pipeline clear. They stay here, searchable, and can be restored any time.</p></div>`;
   } else if (v === 'board') {
     el.innerHTML = `<div class="board">${STAGES.map((s) => {
       const items = list.filter((i) => i.stage === s.key);
@@ -240,7 +262,7 @@ function renderSheet() {
   const done = ws.checklist.filter((c) => c.done).length;
   const opts = (arr, val) => arr.map(([v, l]) => `<option value="${esc(v)}" ${val === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
   el.innerHTML = `
-    <div class="sh-head"><div class="t"><span class="num">#${pad(i.no)}</span><h2>${esc(i.title)}</h2></div>
+    <div class="sh-head"><div class="t"><span class="num">#${pad(i.no)}</span>${i.archived ? ' <span class="tag">Archived</span>' : ''}<h2>${esc(i.title)}</h2></div>
       <button class="btn icon" data-action="close" aria-label="Close">×</button></div>
     <div class="sh-body">
       <div class="steps" role="tablist">${STAGES.map((s, n) => `<button class="step ${n < cur ? 'done' : ''} ${n === cur ? 'cur' : ''} ${s.key === viewKey ? 'view' : ''}" data-action="viewstage" data-key="${s.key}" role="tab" aria-selected="${s.key === viewKey}">
@@ -277,7 +299,7 @@ function renderSheet() {
           <div class="field"><label for="d-stage">Current stage</label><select id="d-stage" data-field="stage">${opts(STAGES.map((s) => [s.key, s.long]), i.stage)}</select></div>
         </div>
         <div class="field"><label for="d-notes">Production notes</label><textarea id="d-notes" data-field="notes" placeholder="Recipe variables, reminders…">${esc(i.notes)}</textarea></div>
-        <button class="btn danger" data-action="delete" data-id="${i.id}">Delete idea</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${i.archived ? `<button class="btn" data-action="restore" data-id="${i.id}">Restore to pipeline</button>` : `<button class="btn" data-action="archive" data-id="${i.id}">Archive idea</button>`}<button class="btn danger" data-action="delete" data-id="${i.id}">Delete idea</button></div>
       </section>
     </div>`;
   el.scrollTop = top;
@@ -343,6 +365,8 @@ const A = {
   stagefilter: (el) => { S.ui.stage = S.ui.stage === el.dataset.key ? '' : el.dataset.key; persist(); renderAll(); },
   scroll: (el) => { const c = $('#carousel'); c?.scrollBy({ left: Number(el.dataset.dir) * 350 }); },
   calnav: (el) => { const [y, m] = S.ui.cal.split('-').map(Number); const d = new Date(y, m - 1 + Number(el.dataset.dir), 1); S.ui.cal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; persist(); renderView(); },
+  archive: (el) => setArchived(el.dataset.id, true),
+  restore: (el) => setArchived(el.dataset.id, false),
   new: newIdeaModal,
   settings: settingsModal,
   closemodal: closeModal,

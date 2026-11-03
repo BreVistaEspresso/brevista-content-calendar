@@ -212,5 +212,6 @@ select option { color: #22252A; }
   .filters input { flex: 1 1 100%; }
   .filters select { flex: 1 1 calc(50% - 6px); min-width: 0; min-height: 38px; font-size: 14px; }
   .chip { flex: 0 0 88px; }
+  .views button { font-size: 12px; padding: 8px 1px; min-width: 0; white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
