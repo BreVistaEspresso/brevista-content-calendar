@@ -20,8 +20,8 @@ h1, h2, h3, h4 { margin: 0; }
 .p-high, .pri-high { --p: var(--hi); }
 .p-medium, .pri-medium { --p: var(--md-dot); }
 .p-low, .pri-low { --p: var(--lo); }
-/* the edge strip uses Brevista purple for medium; the dot and label keep the yellow */
-.p-medium { --strip: var(--purple); }
+/* every card's edge strip is Brevista purple; priority shows through the dot and label */
+.card, .row { --strip: var(--purple); }
 
 /* header */
 .top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px;
