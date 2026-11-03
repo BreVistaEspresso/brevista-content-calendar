@@ -134,7 +134,7 @@ function cardHtml(i, variant = '') {
   const late = i.publishDate && i.publishDate < todayStr() && i.stage !== 'published';
   const next = STAGES[stageIdx(i.stage) + 1];
   const pri = BRAND.priorities.find((p) => p.key === i.priority);
-  return `<article class="card ${variant} ${S.ui.sel === i.id ? 'sel' : ''}" data-action="open" data-id="${i.id}" tabindex="0">
+  return `<article class="card p-${i.priority} ${variant} ${S.ui.sel === i.id ? 'sel' : ''}" data-action="open" data-id="${i.id}" tabindex="0">
     <div class="card-top"><span class="num">#${pad(i.no)}</span><span class="pri pri-${i.priority}">${esc(pri?.label || '')}</span></div>
     <h3 class="card-title">${esc(i.title)}</h3>
     <div class="meta">${i.category ? `<span class="tag">${esc(i.category)}</span>` : ''}${i.publishDate ? `<span class="tag ${late ? 'overdue' : ''}">${late ? 'Overdue · ' : ''}${esc(fmtDate(i.publishDate))}</span>` : ''}</div>
@@ -189,7 +189,7 @@ function renderView() {
   } else if (v === 'list') {
     el.innerHTML = list.length ? `<div class="list">${list.map((i) => {
       const st = stageOf(i.stage);
-      return `<button class="row" data-action="open" data-id="${i.id}">
+      return `<button class="row p-${i.priority}" data-action="open" data-id="${i.id}">
         <span class="rt">#${pad(i.no)} · ${esc(i.title)}</span>
         <span class="rr"><i class="dot s-${st.key}"></i>${esc(st.label)}</span>
         <span class="rs"><span class="pri pri-${i.priority}">${esc(i.priority)}</span>${i.category ? `<span>${esc(i.category)}</span>` : ''}${i.publishDate ? `<span>${esc(fmtDate(i.publishDate))}</span>` : ''}</span>
