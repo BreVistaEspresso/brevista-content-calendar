@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brevista Content Pipeline</title>
+<meta name="theme-color" content="#2A1632">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brevista">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <div class="brand-name">Brevista</div>
+      <div class="brand-sub">Content pipeline</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button class="sync" id="sync-chip" data-action="sync" aria-label="Sync status"><i class="sdot"></i><span id="sync-text">Local only</span></button>
+    <button class="btn primary" data-action="new">+ Add idea</button>
+    <button class="btn icon" data-action="settings" aria-label="Settings">&#8943;</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="dash" class="dash" aria-label="Pipeline overview"></section>
+
+  <nav class="views" id="views" aria-label="Views"></nav>
+  <section class="filters" id="filters" aria-label="Filters"></section>
+
+  <section id="view" class="view"></section>
+</main>
+
+<div id="scrim" class="scrim" data-action="close"></div>
+<aside id="sheet" class="sheet" aria-label="Idea workspace"></aside>
+<div id="modal" class="modal" role="dialog" aria-modal="true"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
