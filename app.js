@@ -18,6 +18,16 @@ const stable = (o) => JSON.stringify(o, (k, v) => (v && typeof v === 'object' &&
 const safeUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch { return ''; } };
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
+const svg = (inner) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const ICON = {
+  search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'),
+  sliders: svg('<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'),
+  layers: svg('<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>'),
+  grid: svg('<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>'),
+  star: svg('<path d="m12 3 2.8 6 6.2.6-4.7 4.2 1.5 6.2L12 16.800 6.200 20l1.500-6.200L3 9.600 9.200 9z"/>'),
+  sort: svg('<path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4"/>'),
+};
+
 /* ---------- state ---------- */
 const S = {
   ideas: {}, meta: {}, pendingDeletes: [],
@@ -50,9 +60,9 @@ function load() {
   for (const i of Object.values(S.ideas)) normalize(i);
 }
 function persist() {
-  const { view, q, stage, category, priority, sort, cal } = S.ui;
+  const { view, q, stage, category, priority, sort, cal, filtersOpen } = S.ui;
   try {
-    localStorage.setItem(STORE, JSON.stringify({ ideas: S.ideas, meta: S.meta, pendingDeletes: S.pendingDeletes, cfg: S.cfg, ui: { view, q, stage, category, priority, sort, cal } }));
+    localStorage.setItem(STORE, JSON.stringify({ ideas: S.ideas, meta: S.meta, pendingDeletes: S.pendingDeletes, cfg: S.cfg, ui: { view, q, stage, category, priority, sort, cal, filtersOpen } }));
   } catch { /* storage full or blocked: app still works in memory */ }
 }
 
@@ -158,17 +168,26 @@ function cardHtml(i, variant = '') {
 }
 
 function renderDash() {
-  if (S.ui.view === 'archive') { $('#dash').innerHTML = ''; return; }
+  const el = $('#dash');
+  if (S.ui.view === 'archive') { el.innerHTML = ''; return; }
+  const prevScroll = $('#stages')?.scrollLeft || 0;
   const all = Object.values(S.ideas).filter((i) => !i.archived);
-  const chips = STAGES.map((s) => {
+  const squares = STAGES.map((s) => {
     const n = all.filter((i) => i.stage === s.key).length;
-    return `<button class="chip ${S.ui.stage === s.key ? 'on' : ''}" data-action="stagefilter" data-key="${s.key}"><b>${n}</b><span><i class="dot s-${s.key}"></i> ${esc(s.label)}</span></button>`;
+    return `<button class="sq ${S.ui.stage === s.key ? 'on' : ''}" data-action="stagefilter" data-key="${s.key}" aria-pressed="${S.ui.stage === s.key}"><b>${n}</b><span><i class="dot s-${s.key}"></i>${esc(s.label)}</span></button>`;
   }).join('');
-  const nx = nextUp().map((i) => `<button class="nx" data-action="open" data-id="${i.id}">
-      <span class="num">#${pad(i.no)}</span>
-      <span><span class="t">${esc(i.title)}</span><span class="s">${esc(stageOf(i.stage).label)}${i.publishDate ? ' · ' + esc(fmtDate(i.publishDate)) : ''}</span></span></button>`).join('');
-  $('#dash').innerHTML = `<div class="chips">${chips}</div>
-    <div class="next"><p class="eyebrow">Next up</p><div class="next-row">${nx || '<span class="empty">Nothing in the pipeline.</span>'}</div></div>`;
+  const [top, ...rest] = nextUp();
+  const hero = top ? `<button class="nx hero" data-action="open" data-id="${top.id}">
+      <span class="num">#${pad(top.no)}</span>
+      <span class="nt"><b>${esc(top.title)}</b><small>${esc(stageOf(top.stage).label)}${top.publishDate ? ' · ' + esc(fmtDate(top.publishDate)) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>` : '<span class="empty">Nothing in the pipeline.</span>';
+  const more = rest.map((i) => `<button class="nm" data-action="open" data-id="${i.id}"><span class="num">#${pad(i.no)}</span><span class="nmt">${esc(i.title)}</span></button>`).join('');
+  el.innerHTML = `<div class="stages-wrap"><button class="nav l" data-action="scrollstages" data-dir="-1" aria-label="Scroll stages left">‹</button>
+      <div class="stages" id="stages">${squares}</div>
+      <button class="nav r" data-action="scrollstages" data-dir="1" aria-label="Scroll stages right">›</button></div>
+    <div class="next"><p class="eyebrow">Next up</p>${hero}${more ? `<div class="next-more">${more}</div>` : ''}</div>`;
+  const st = $('#stages');
+  st.scrollLeft = prevScroll;
+  st.parentElement.classList.toggle('has-overflow', st.scrollWidth > st.clientWidth + 2);
 }
 
 const VIEWS = [['carousel', 'Carousel'], ['board', 'Board'], ['list', 'List'], ['calendar', 'Calendar'], ['archive', 'Archive']];
@@ -176,12 +195,32 @@ function renderChrome() {
   const archivedN = Object.values(S.ideas).filter((i) => i.archived).length;
   $('#views').innerHTML = VIEWS.map(([k, l]) => `<button class="${S.ui.view === k ? 'on' : ''}" data-action="view" data-key="${k}">${l}${k === 'archive' && archivedN ? ' (' + archivedN + ')' : ''}</button>`).join('');
   const opt = (arr, val, all) => `<option value="">${all}</option>` + arr.map(([v, l]) => `<option value="${esc(v)}" ${val === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
+  const fo = S.ui.filtersOpen !== false;
+  const fsel = (key, cls, icon, label, html) => `<label class="fsel ${cls}"><span class="fi">${icon}</span><select data-filter="${key}" aria-label="${label}">${html}</select></label>`;
   $('#filters').innerHTML = `
-    <input type="search" id="f-q" data-filter="q" placeholder="Search ideas" value="${esc(S.ui.q)}" aria-label="Search ideas">
-    <select data-filter="stage" aria-label="Stage">${opt(STAGES.map((s) => [s.key, s.long]), S.ui.stage, 'All stages')}</select>
-    <select data-filter="category" aria-label="Category">${opt(BRAND.categories.map((c) => [c, c]), S.ui.category, 'All categories')}</select>
-    <select data-filter="priority" aria-label="Priority">${opt(BRAND.priorities.map((p) => [p.key, p.label]), S.ui.priority, 'Any priority')}</select>
-    <select data-filter="sort" aria-label="Sort">${opt([['priority', 'Sort: priority'], ['date', 'Sort: publish date'], ['stage', 'Sort: stage'], ['title', 'Sort: title']], S.ui.sort === 'number' ? '' : S.ui.sort, 'Sort: number')}</select>`;
+    <div class="searchbar"><span class="si">${ICON.search}</span>
+      <input type="search" id="f-q" data-filter="q" placeholder="Search ideas" value="${esc(S.ui.q)}" aria-label="Search ideas">
+      <button class="fbtn ${fo ? 'on' : ''}" data-action="togglefilters" aria-label="Show or hide filters" aria-expanded="${fo}">${ICON.sliders}</button></div>
+    ${fo ? `<div class="fgrid">
+      ${fsel('stage', 'a1', ICON.layers, 'Stage', opt(STAGES.map((s) => [s.key, s.long]), S.ui.stage, 'All stages'))}
+      ${fsel('category', 'a2', ICON.grid, 'Category', opt(BRAND.categories.map((c) => [c, c]), S.ui.category, 'All categories'))}
+      ${fsel('priority', 'a3', ICON.star, 'Priority', opt(BRAND.priorities.map((p) => [p.key, p.label]), S.ui.priority, 'Any priority'))}
+      ${fsel('sort', 'a4', ICON.sort, 'Sort', opt([['priority', 'Sort: priority'], ['date', 'Sort: publish date'], ['stage', 'Sort: stage'], ['title', 'Sort: title']], S.ui.sort === 'number' ? '' : S.ui.sort, 'Sort: number'))}
+    </div>` : ''}`;
+}
+
+
+function setupHero() {
+  const c = $('#carousel'); if (!c) return;
+  let raf;
+  const mark = () => {
+    const left = c.getBoundingClientRect().left + 2;
+    let best = null, gap = Infinity;
+    for (const el of c.children) { const d = Math.abs(el.getBoundingClientRect().left - left); if (d < gap) { gap = d; best = el; } }
+    for (const el of c.children) el.classList.toggle('hero', el === best);
+  };
+  c.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(mark); }, { passive: true });
+  mark();
 }
 
 function renderView() {
@@ -220,6 +259,7 @@ function renderView() {
   } else {
     el.innerHTML = calendarHtml(list);
   }
+  setupHero();
 }
 const emptyHtml = () => Object.keys(S.ideas).length
   ? `<div class="panel"><h3>No ideas match</h3><p class="desc">Clear the filters or add a new idea.</p></div>`
@@ -363,6 +403,8 @@ const A = {
   viewstage: (el) => { S.ui.openStage = el.dataset.key; renderSheet(); },
   view: (el) => { S.ui.view = el.dataset.key; persist(); renderAll(); },
   stagefilter: (el) => { S.ui.stage = S.ui.stage === el.dataset.key ? '' : el.dataset.key; persist(); renderAll(); },
+  togglefilters: () => { S.ui.filtersOpen = S.ui.filtersOpen === false; persist(); renderChrome(); },
+  scrollstages: (el) => { $('#stages')?.scrollBy({ left: Number(el.dataset.dir) * 200, behavior: 'smooth' }); },
   scroll: (el) => { const c = $('#carousel'); c?.scrollBy({ left: Number(el.dataset.dir) * 350 }); },
   calnav: (el) => { const [y, m] = S.ui.cal.split('-').map(Number); const d = new Date(y, m - 1 + Number(el.dataset.dir), 1); S.ui.cal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; persist(); renderView(); },
   archive: (el) => setArchived(el.dataset.id, true),
