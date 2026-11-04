@@ -1,6 +1,6 @@
 // Offline shell: serve cached files, refresh them in the background.
 // GitHub API calls are cross-origin and are never cached here.
-const CACHE = 'bv-shell-v9';
+const CACHE = 'bv-shell-v10';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'brand.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg', 'icons/favicon-32.png', 'icons/favicon-48.png'];
 
 self.addEventListener('install', (e) => {

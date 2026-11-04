@@ -156,7 +156,7 @@ function cardHtml(i, variant = '') {
   const late = i.publishDate && i.publishDate < todayStr() && i.stage !== 'published';
   const next = STAGES[stageIdx(i.stage) + 1];
   const pri = BRAND.priorities.find((p) => p.key === i.priority);
-  return `<article class="card p-${i.priority} ${i.archived ? 'arch' : ''} ${variant} ${S.ui.sel === i.id ? 'sel' : ''}" data-action="open" data-id="${i.id}" tabindex="0">
+  return `<article class="card p-${i.priority} ${i.archived ? 'arch' : ''} ${variant} ${S.ui.sel === i.id ? 'sel' : ''}" data-action="open" data-id="${i.id}" tabindex="0"><span class="dk" aria-hidden="true"></span>
     <div class="card-top"><span class="num">#${pad(i.no)}</span><span class="pri pri-${i.priority}">${esc(pri?.label || '')}</span></div>
     <h3 class="card-title">${esc(i.title)}</h3>
     <div class="meta">${i.archived ? `<span class="tag">Archived${i.archivedAt ? ' · ' + esc(fmtDate(i.archivedAt.slice(0, 10))) : ''}</span>` : ''}${i.category ? `<span class="tag">${esc(i.category)}</span>` : ''}${i.publishDate ? `<span class="tag ${late ? 'overdue' : ''}">${late ? 'Overdue · ' : ''}${esc(fmtDate(i.publishDate))}</span>` : ''}</div>
@@ -213,11 +213,16 @@ function renderChrome() {
 function setupHero() {
   const c = $('#carousel'); if (!c) return;
   let raf;
+  // Each card gets --h from 0 to 1: how close it is to the lead (left) position. CSS blends light to dark from it.
   const mark = () => {
-    const left = c.getBoundingClientRect().left + 2;
-    let best = null, gap = Infinity;
-    for (const el of c.children) { const d = Math.abs(el.getBoundingClientRect().left - left); if (d < gap) { gap = d; best = el; } }
-    for (const el of c.children) el.classList.toggle('hero', el === best);
+    const rect = c.getBoundingClientRect();
+    const kids = [...c.children];
+    const span = (kids[0]?.offsetWidth || 300) + 14;
+    for (const el of kids) {
+      const d = Math.abs(el.getBoundingClientRect().left - rect.left - 2);
+      const t = Math.max(0, 1 - d / span);
+      el.style.setProperty('--h', (t * t * (3 - 2 * t)).toFixed(3));
+    }
   };
   c.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(mark); }, { passive: true });
   mark();

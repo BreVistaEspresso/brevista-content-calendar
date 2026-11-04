@@ -239,20 +239,22 @@ select option { color: #22252A; }
 .fsel.a3 { --a0: #C98A12; --a1: rgba(228, 161, 43, .18); }
 .fsel.a4 { --a0: #3F7FD0; --a1: rgba(79, 143, 224, .15); }
 
-/* cards: light by default, the leftmost visible carousel card is the dark hero */
+/* cards: light by default; --h (0 to 1, set while scrolling) blends the lead carousel card to dark */
 .card { background: rgba(255, 255, 255, .95); box-shadow: 0 6px 16px rgba(62, 31, 71, .1); }
 .card::after { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 60% at 95% 0%, rgba(190, 150, 240, .2), transparent 60%); pointer-events: none; }
-.card.hero { background: var(--glass-dk); border-color: rgba(255, 255, 255, .22); color: #fff; box-shadow: 0 10px 24px rgba(62, 31, 71, .3); }
-.card.hero::before { background: #B79AD0; }
-.card.hero::after { background: radial-gradient(120% 60% at 95% 0%, rgba(190, 150, 240, .38), transparent 60%); }
-.card.hero .card-title { color: #fff; }
-.card.hero .num { background: rgba(255, 255, 255, .16); color: #fff; }
-.card.hero .pri, .card.hero .stage-pill { color: #fff; }
-.card.hero .tag { background: rgba(167, 120, 230, .38); color: #EEDFFF; }
-.card.hero .tag.overdue { background: rgba(255, 120, 110, .3); color: #FFD3CF; }
-.card.hero .bar { background: rgba(255, 255, 255, .22); }
-.card.hero .bar i { background: linear-gradient(90deg, #A97CD0, #D2B4F2); }
-.card.hero .btn.sm { background: var(--grad-btn); box-shadow: var(--glow); }
+.card { --h: 0; --hp: calc(var(--h) * 100%); --tp: calc(clamp(0, (var(--h) - .62) * 12, 1) * 100%); } /* text flips quickly once the background is dark enough (about 70%), so it is never mid-grey on a mid-tone background */
+.card > .dk { position: absolute; inset: 0; z-index: 0; background: var(--glass-dk); opacity: var(--h); pointer-events: none; }
+.card > *:not(.dk) { position: relative; z-index: 1; }
+.card::before { z-index: 2; background: color-mix(in srgb, #B79AD0 var(--hp), var(--purple)); }
+.card { border-color: color-mix(in srgb, rgba(255, 255, 255, .24) var(--hp), var(--line)); transform: scale(calc(.97 + .03 * var(--h))); box-shadow: 0 calc(6px + 5px * var(--h)) calc(16px + 8px * var(--h)) rgba(62, 31, 71, calc(.1 + .2 * var(--h))); }
+.card .card-title { color: color-mix(in srgb, #fff var(--tp), var(--deep)); }
+.card .num { background: color-mix(in srgb, rgba(255, 255, 255, .16) var(--hp), var(--chipbg)); color: color-mix(in srgb, #fff var(--tp), var(--mut)); }
+.card .pri, .card .stage-pill { color: color-mix(in srgb, #fff var(--tp), var(--ink)); }
+.card .tag { background: color-mix(in srgb, rgba(167, 120, 230, .38) var(--hp), var(--tint)); color: color-mix(in srgb, #EEDFFF var(--tp), var(--deep)); }
+.card .bar { background: color-mix(in srgb, rgba(255, 255, 255, .22) var(--hp), var(--chipbg)); }
+.card .bar i { background: color-mix(in srgb, #D2B4F2 var(--hp), var(--purple)); }
+.card .btn.sm { background: color-mix(in srgb, #8456A2 var(--hp), var(--purple)); box-shadow: 0 0 calc(14px * var(--h)) rgba(150, 90, 210, .4); }
+@supports not (color: color-mix(in srgb, red, blue)) { .card > .dk { opacity: 0; } .card { --h: 0 !important; } }
 .carousel { scroll-snap-type: x mandatory; }
 .carousel .card { scroll-snap-align: start; }
 .carousel { scroll-padding-left: 2px; }
