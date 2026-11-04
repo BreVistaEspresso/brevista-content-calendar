@@ -77,9 +77,9 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* carousel */
 .carousel-wrap { position: relative; }
-.carousel { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px 2px 14px; scrollbar-width: none; scroll-behavior: smooth; }
+.carousel { --cw: min(76vw, 306px); display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px calc(50% - var(--cw) / 2) 14px; scrollbar-width: none; scroll-behavior: smooth; }
 .carousel::-webkit-scrollbar { display: none; }
-.carousel .card { flex: 0 0 min(84vw, 340px); scroll-snap-align: center; min-height: 250px; }
+.carousel .card { flex: 0 0 var(--cw); scroll-snap-align: center; min-height: 250px; }
 .nav { position: absolute; top: 45%; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 20px; display: none; align-items: center; justify-content: center; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .nav.l { left: -12px; } .nav.r { right: -12px; }
 @media (hover: hover) and (min-width: 760px) { .nav { display: flex; } }
@@ -256,8 +256,6 @@ select option { color: #22252A; }
 .card .btn.sm { background: color-mix(in srgb, #8456A2 var(--hp), var(--purple)); box-shadow: 0 0 calc(14px * var(--h)) rgba(150, 90, 210, .4); }
 @supports not (color: color-mix(in srgb, red, blue)) { .card > .dk { opacity: 0; } .card { --h: 0 !important; } }
 .carousel { scroll-snap-type: x mandatory; }
-.carousel .card { scroll-snap-align: start; }
-.carousel { scroll-padding-left: 2px; }
 
 @media (max-width: 560px) {
   .views button { font-size: 12px; padding: 8px 1px; min-width: 0; }

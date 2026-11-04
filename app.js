@@ -213,14 +213,15 @@ function renderChrome() {
 function setupHero() {
   const c = $('#carousel'); if (!c) return;
   let raf;
-  // Each card gets --h from 0 to 1: how close it is to the lead (left) position. CSS blends light to dark from it.
+  // Each card gets --h from 0 to 1: how close it is to the centre of the carousel. CSS blends light to dark from it.
   const mark = () => {
     const rect = c.getBoundingClientRect();
+    const mid = rect.left + rect.width / 2;
     const kids = [...c.children];
     const span = (kids[0]?.offsetWidth || 300) + 14;
     for (const el of kids) {
-      const d = Math.abs(el.getBoundingClientRect().left - rect.left - 2);
-      const t = Math.max(0, 1 - d / span);
+      const r = el.getBoundingClientRect();
+      const t = Math.max(0, 1 - Math.abs(r.left + r.width / 2 - mid) / span);
       el.style.setProperty('--h', (t * t * (3 - 2 * t)).toFixed(3));
     }
   };
@@ -410,7 +411,7 @@ const A = {
   stagefilter: (el) => { S.ui.stage = S.ui.stage === el.dataset.key ? '' : el.dataset.key; persist(); renderAll(); },
   togglefilters: () => { S.ui.filtersOpen = S.ui.filtersOpen === false; persist(); renderChrome(); },
   scrollstages: (el) => { $('#stages')?.scrollBy({ left: Number(el.dataset.dir) * 200, behavior: 'smooth' }); },
-  scroll: (el) => { const c = $('#carousel'); c?.scrollBy({ left: Number(el.dataset.dir) * 350 }); },
+  scroll: (el) => { const c = $('#carousel'); if (c) c.scrollBy({ left: Number(el.dataset.dir) * (c.children[0].offsetWidth + 14) }); },
   calnav: (el) => { const [y, m] = S.ui.cal.split('-').map(Number); const d = new Date(y, m - 1 + Number(el.dataset.dir), 1); S.ui.cal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; persist(); renderView(); },
   archive: (el) => setArchived(el.dataset.id, true),
   restore: (el) => setArchived(el.dataset.id, false),
