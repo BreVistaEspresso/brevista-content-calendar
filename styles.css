@@ -49,7 +49,7 @@ h1, h2, h3, h4 { margin: 0; }
 .sync[data-s="offline"] .sdot { background: var(--amber); }
 @keyframes pulse { 50% { opacity: .3; } }
 
-.wrap { max-width: 1180px; margin: 0 auto; padding: 16px 16px 90px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 16px 16px calc(24px + var(--safe-b)); }
 
 /* views + filters */
 
@@ -77,9 +77,9 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* carousel */
 .carousel-wrap { position: relative; }
-.carousel { --cw: min(76vw, 306px); display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px calc(50% - var(--cw) / 2) 14px; scrollbar-width: none; scroll-behavior: smooth; }
+.carousel { --cw: min(76vw, 306px); display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px calc(50% - var(--cw) / 2) 14px 2px; scrollbar-width: none; scroll-behavior: smooth; }
 .carousel::-webkit-scrollbar { display: none; }
-.carousel .card { flex: 0 0 var(--cw); scroll-snap-align: center; min-height: 250px; }
+.carousel .card { flex: 0 0 var(--cw); scroll-snap-align: center; min-height: 250px; border-right: 6px solid color-mix(in srgb, #B79AD0 var(--hp), #A9A3AE); } /* grey trailing edge shows on the previous card, like the purple stripe on the next */
 .nav { position: absolute; top: 45%; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 20px; display: none; align-items: center; justify-content: center; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .nav.l { left: -12px; } .nav.r { right: -12px; }
 @media (hover: hover) and (min-width: 760px) { .nav { display: flex; } }
@@ -179,7 +179,7 @@ select option { color: #22252A; }
   .sync span { display: none; }
   .sync { padding: 6px 10px; }
   .top-actions { gap: 6px; }
-  .wrap { padding: 12px 12px 90px; }
+  .wrap { padding: 12px 12px calc(24px + var(--safe-b)); }
   .filters { gap: 6px; }
   .views button { font-size: 12px; padding: 8px 1px; min-width: 0; white-space: nowrap; }
 }

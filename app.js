@@ -213,15 +213,15 @@ function renderChrome() {
 function setupHero() {
   const c = $('#carousel'); if (!c) return;
   let raf;
-  // Each card gets --h from 0 to 1: how close it is to the centre of the carousel. CSS blends light to dark from it.
+  // Each card gets --h from 0 to 1: how close the scroll position is to the position where that card is the lead.
+  // The first card leads at the far left; later cards lead when centred. CSS blends light to dark from --h.
   const mark = () => {
-    const rect = c.getBoundingClientRect();
-    const mid = rect.left + rect.width / 2;
     const kids = [...c.children];
     const span = (kids[0]?.offsetWidth || 300) + 14;
+    const max = c.scrollWidth - c.clientWidth;
     for (const el of kids) {
-      const r = el.getBoundingClientRect();
-      const t = Math.max(0, 1 - Math.abs(r.left + r.width / 2 - mid) / span);
+      const lead = Math.min(max, Math.max(0, el.offsetLeft - c.offsetLeft - (c.clientWidth - el.offsetWidth) / 2));
+      const t = Math.max(0, 1 - Math.abs(c.scrollLeft - lead) / span);
       el.style.setProperty('--h', (t * t * (3 - 2 * t)).toFixed(3));
     }
   };
